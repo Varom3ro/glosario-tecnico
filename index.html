@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glosario Técnico MVP — Tu Biblioteca Local-First</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Glosario técnico digital interactivo y personalizable para diseñadores, desarrolladores y especialistas en marketing digital. Funciona 100% offline y almacena tus datos de forma local y segura." />
+    <meta name="keywords" content="glosario tecnico, PWA, local-first, base de datos local, offline dictionary, inteligencia artificial, programacion, marketing digital, diseño web" />
+    <meta name="author" content="Antigravity Agent" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Glosario Técnico MVP — Tu Biblioteca Local-First" />
+    <meta property="og:description" content="Consulta rápida de términos sobre IA, diseño web, desarrollo de apps y marketing digital. 100% interactivo, instalable y sin conexión." />
+    
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app" class="app-container">
+      
+      <!-- HEADER -->
+      <header class="app-header">
+        <div class="logo-container">
+          <div class="logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+            </svg>
+          </div>
+          <div class="logo-text">
+            <h1>Glosario<span>Técnico</span></h1>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span class="badge-version">MVP v1.0</span>
+              <span id="cloud-sync-badge" class="badge-sync offline" title="Sincronización en la Nube">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 11px; height: 11px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                </svg>
+                <span>Conectando...</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- Install PWA Button -->
+          <button id="btn-install-pwa" class="btn btn-secondary btn-icon-only hide" title="Instalar Aplicación">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            <span class="btn-text">Instalar</span>
+          </button>
+          
+          <!-- Light/Dark Mode Toggle -->
+          <button id="btn-theme-toggle" class="btn btn-secondary btn-icon-only" aria-label="Cambiar tema visual" title="Alternar Modo Oscuro/Claro">
+            <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m0 13.5V21m8.955-8.955h-2.25m-13.5 0h-2.25m15.022-7.477-1.591 1.591M6.784 17.216l-1.591 1.591m12.728 0-1.591-1.591M6.784 6.784A7.5 7.5 0 1 1 18 12a7.5 7.5 0 0 1-11.216-5.216Z" />
+            </svg>
+            <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+            </svg>
+          </button>
+          
+          <!-- Settings Button -->
+          <button id="btn-settings-toggle" class="btn btn-secondary btn-icon-only" aria-label="Ajustes de API" title="Ajustes de API de Gemini">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+          </button>
+
+          <!-- Add Term Button -->
+          <button id="btn-add-term" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span>Crear Término</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN LAYOUT -->
+      <main class="main-layout">
+        
+        <!-- SIDEBAR (COLUMNA IZQUIERDA) -->
+        <aside class="sidebar" aria-label="Menú lateral y estadísticas">
+          
+          <!-- Buscador de Estadísticas -->
+          <div class="sidebar-block card">
+            <h2 class="sidebar-title">Mi Progreso</h2>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span id="stat-total" class="stat-number">0</span>
+                <span class="stat-label">Términos</span>
+              </div>
+              <div class="stat-item">
+                <span id="stat-favorites" class="stat-number">0</span>
+                <span class="stat-label">Favoritos</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtro Categorías -->
+          <div class="sidebar-block card">
+            <div class="sidebar-header-with-action">
+              <h2 class="sidebar-title">Categorías</h2>
+              <button id="btn-clear-category" class="btn-text-only hide">Limpiar</button>
+            </div>
+            <div id="categories-container" class="categories-list">
+              <!-- Cargadas dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Bloque de Recientes -->
+          <div class="sidebar-block card">
+            <h2 class="sidebar-title">Recientes</h2>
+            <ul id="recents-list" class="sidebar-item-list">
+              <!-- Cargadas dinámicamente -->
+              <li class="empty-list-msg">No hay consultas recientes</li>
+            </ul>
+          </div>
+
+          <!-- Bloque de Favoritos -->
+          <div class="sidebar-block card">
+            <h2 class="sidebar-title">Favoritos Destacados</h2>
+            <ul id="favorites-list" class="sidebar-item-list">
+              <!-- Cargadas dinámicamente -->
+              <li class="empty-list-msg">No has marcado favoritos aún</li>
+            </ul>
+          </div>
+        </aside>
+
+        <!-- CONTAINER PRINCIPAL (CENTRAL) -->
+        <section class="main-content" aria-label="Resultados del Glosario">
+          
+          <!-- Majestic Search Container -->
+          <div class="search-section">
+            <div class="search-bar-wrapper">
+              <div class="search-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21-21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </div>
+              <input type="text" id="input-search" placeholder="Busca un término, abreviatura o palabra clave (ej: PWA, SEO)..." autocomplete="off" />
+              <button id="btn-clear-search" class="search-clear-btn hide" aria-label="Limpiar búsqueda">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Filtros Rápidos / Categorías Móvil (Carrusel horizontal) -->
+            <div class="mobile-categories-wrapper">
+              <div id="mobile-categories-list" class="mobile-categories-list">
+                <!-- Se clona de escritorio o se carga dinámicamente -->
+              </div>
+            </div>
+          </div>
+
+          <!-- GRID DE TARJETAS -->
+          <div class="results-info">
+            <span id="results-count">Mostrando todos los términos</span>
+          </div>
+
+          <div id="terms-grid" class="terms-grid">
+            <!-- Renderizado dinámico de tarjetas -->
+          </div>
+
+          <!-- ESTADO VACÍO (EMPTY STATE) -->
+          <div id="empty-state" class="empty-state hide">
+            <div class="empty-illustration">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
+              </svg>
+            </div>
+            <h3>¡Oh! No encontramos ese concepto</h3>
+            <p>Tu glosario es personalizable y local. Puedes crear esta ficha en IndexedDB en segundos para registrar el concepto permanentemente.</p>
+            <button id="btn-empty-state-create" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              <span>Crear término "<span id="missing-term-name"></span>"</span>
+            </button>
+          </div>
+
+          <!-- Sección de Novedades (Debajo de los resultados) -->
+          <div class="novedades-section">
+            <h2 class="section-subtitle">Últimas Novedades Actualizadas</h2>
+            <div id="novedades-grid" class="novedades-grid">
+              <!-- Renderizado de las novedades -->
+            </div>
+          </div>
+        </section>
+
+        <!-- CAJÓN DE DETALLE DE TÉRMINO (SLIDE-OUT DRAWER) -->
+        <aside id="drawer-detail" class="drawer-detail" aria-label="Detalle del término seleccionado">
+          <div class="drawer-overlay" id="drawer-overlay"></div>
+          <div class="drawer-content">
+            <div class="drawer-header">
+              <button id="btn-drawer-close" class="btn-close" aria-label="Cerrar cajón de detalle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div class="drawer-meta-actions">
+                <button id="btn-drawer-favorite" class="btn btn-secondary btn-icon-only" title="Agregar a favoritos">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="star-icon" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499c.172-.403.743-.403.915 0l2.35 4.773 5.242.763c.44.064.618.608.301.916l-3.8 3.702.898 5.223c.075.44-.39.778-.779.57L12 17.25l-4.69 2.477c-.389.208-.853-.13-1.002-.57l.899-5.223-3.8-3.702c-.317-.308-.139-.852.302-.916l5.243-.763 2.35-4.773Z" />
+                  </svg>
+                </button>
+                <button id="btn-drawer-edit" class="btn btn-secondary btn-icon-only" title="Editar Término">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                  </svg>
+                </button>
+                <button id="btn-drawer-delete" class="btn btn-danger-soft btn-icon-only" title="Eliminar Término">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Detalle dinámico del término -->
+            <div id="drawer-term-body" class="drawer-term-body">
+              <!-- Renderizado dinámico de la ficha completa -->
+            </div>
+            
+            <div class="drawer-footer">
+              <button id="btn-ia-generate" class="btn btn-ia-feature">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="sparkles-icon animate-pulse">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 21l-.813-5.096L3.091 15 8.19 14.187 9 9l.813 5.187 5.096.813-5.096.814ZM19.07 9.14l-1.07 3.6-3.6-1.07 3.6-1.07 1.07-3.6 1.07 3.6 3.6 1.07-3.6 1.07Z" />
+                </svg>
+                <span>Expandir con IA (Gemini)</span>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+      </main>
+
+      <!-- MODAL FORMULARIO: CREAR / EDITAR TÉRMINO -->
+      <dialog id="modal-term-form" class="modal-form">
+        <div class="modal-box card">
+          <div class="modal-header">
+            <h2 id="modal-form-title">Crear Ficha Técnica</h2>
+            <button id="btn-modal-close" class="btn-close" aria-label="Cerrar formulario">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <form id="term-form" method="dialog" class="form-grid">
+            <input type="hidden" id="form-term-id" />
+            
+            <!-- Término -->
+            <div class="form-group col-span-6">
+              <label for="form-termino" class="required">Término Principal</label>
+              <div class="input-with-button">
+                <input type="text" id="form-termino" placeholder="Ej: REST API, RAG, Prompt" required autocomplete="off" />
+                <button type="button" id="btn-autofill-ia" class="btn btn-ia-feature" title="Autocompletar ficha con IA">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="sparkles-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 21l-.813-5.096L3.091 15 8.19 14.187 9 9l.813 5.187 5.096.813-5.096.814ZM19.07 9.14l-1.07 3.6-3.6-1.07 3.6-1.07 1.07-3.6 1.07 3.6 3.6 1.07-3.6 1.07Z" />
+                  </svg>
+                  <span>Autocompletar</span>
+                </button>
+              </div>
+              <span class="helper-text">El nombre exacto del concepto técnico.</span>
+            </div>
+
+            <!-- Abreviatura -->
+            <div class="form-group col-span-6">
+              <label for="form-abreviatura">Abreviatura / Siglas</label>
+              <input type="text" id="form-abreviatura" placeholder="Ej: API, RAG" autocomplete="off" />
+              <span class="helper-text">Siglas cortas si aplican.</span>
+            </div>
+
+            <!-- Significado en Español -->
+            <div class="form-group col-span-12">
+              <label for="form-significado_es" class="required">Significado / Traducción al Español</label>
+              <input type="text" id="form-significado_es" placeholder="Ej: Interfaz de Programación de Aplicaciones" required autocomplete="off" />
+              <span class="helper-text">Traducción directa o significado sintetizado del concepto.</span>
+            </div>
+
+            <!-- Categoría -->
+            <div class="form-group col-span-6">
+              <label for="form-categoria" class="required">Categoría</label>
+              <select id="form-categoria" required>
+                <option value="" disabled selected>Selecciona una categoría...</option>
+                <option value="IA">Inteligencia Artificial (IA)</option>
+                <option value="Diseño web">Diseño Web</option>
+                <option value="Programación">Programación</option>
+                <option value="Desarrollo de apps">Desarrollo de Apps</option>
+                <option value="Marketing digital">Marketing Digital</option>
+                <option value="UX/UI">UX/UI</option>
+                <option value="Branding">Branding</option>
+                <option value="Automatización">Automatización</option>
+              </select>
+            </div>
+
+            <!-- Favorito Switch -->
+            <div class="form-group col-span-6 align-end">
+              <label class="checkbox-container">
+                <input type="checkbox" id="form-favorito" />
+                <span class="checkbox-checkmark"></span>
+                <span class="checkbox-label">Marcar como término Favorito</span>
+              </label>
+            </div>
+
+            <!-- Definición Corta -->
+            <div class="form-group col-span-12">
+              <label for="form-definicion_corta" class="required">Definición Corta</label>
+              <textarea id="form-definicion_corta" rows="2" placeholder="Describe brevemente el término en 1 o 2 oraciones..." required></textarea>
+              <span class="helper-text">Será lo primero que se lea en la tarjeta de resultados. Max 150 caracteres.</span>
+            </div>
+
+            <!-- Explicación Ampliada -->
+            <div class="form-group col-span-12">
+              <label for="form-explicacion">Explicación Ampliada</label>
+              <textarea id="form-explicacion" rows="4" placeholder="Profundiza sobre el funcionamiento técnico, arquitectura e implicaciones..."></textarea>
+              <span class="helper-text">Detalle técnico enriquecido del concepto.</span>
+            </div>
+
+            <!-- Tip Práctico -->
+            <div class="form-group col-span-12">
+              <label for="form-tip">Tip Práctico / Consejo de Aplicación</label>
+              <textarea id="form-tip" rows="2" placeholder="Escribe un consejo directo, caso de uso real o buena práctica..."></textarea>
+              <span class="helper-text">Consejo real, no puramente teórico.</span>
+            </div>
+
+            <!-- Palabras Clave (Keywords) -->
+            <div class="form-group col-span-6">
+              <label for="form-keywords">Palabras Clave (Keywords)</label>
+              <input type="text" id="form-keywords" placeholder="Separadas por comas (ej: vector, search, llm)" autocomplete="off" />
+              <span class="helper-text">Mejora las búsquedas. Separar con comas.</span>
+            </div>
+
+            <!-- Relacionados -->
+            <div class="form-group col-span-6">
+              <label for="form-relacionados">Términos Relacionados</label>
+              <input type="text" id="form-relacionados" placeholder="Separados por comas (ej: Prompt, IA)" autocomplete="off" />
+              <span class="helper-text">Otros conceptos del glosario que se vinculan.</span>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions col-span-12">
+              <button type="button" id="btn-form-cancel" class="btn btn-secondary">Cancelar</button>
+              <button type="submit" id="btn-form-submit" class="btn btn-primary">Guardar Ficha</button>
+            </div>
+
+          </form>
+        </div>
+      </dialog>
+
+      <!-- MODAL CONFIGURACIÓN: AJUSTES DE API -->
+      <dialog id="modal-settings" class="modal-form">
+        <div class="modal-box card" style="max-width: 460px;">
+          <div class="modal-header">
+            <h2>Ajustes del Sistema</h2>
+            <button id="btn-settings-close" class="btn-close" aria-label="Cerrar ajustes">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div class="form-grid" style="margin-top: 15px;">
+            <div class="form-group col-span-12">
+              <label for="settings-api-key">Google Gemini API Key</label>
+              <input type="password" id="settings-api-key" placeholder="AIzaSy..." autocomplete="off" style="font-family: monospace;" />
+              <span class="helper-text">La clave se guarda de forma 100% segura en tu navegador local (localStorage). Nunca se envía a servidores externos.</span>
+            </div>
+            
+            <div class="form-group col-span-12">
+              <label for="settings-model">Modelo de Inteligencia Artificial</label>
+              <select id="settings-model" style="width: 100%;">
+                <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash (Súper Rápido y Capa Gratuita Global - Recomendado)</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Razonamiento Avanzado)</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Última Generación Estable)</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Versión Anterior)</option>
+              </select>
+              <span class="helper-text">Gemini 1.5 Flash es el modelo con mayor compatibilidad y disponibilidad de cuota gratuita en todas las regiones (incluida la UE).</span>
+            </div>
+
+            <div class="form-actions col-span-12" style="margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
+              <button type="button" id="btn-settings-clear" class="btn btn-danger-soft">Borrar Clave</button>
+              <button type="button" id="btn-settings-save" class="btn btn-primary">Guardar Ajustes</button>
+            </div>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- MODAL DEEPDIVE: CASOS DE USO Y EJEMPLOS CON IA -->
+      <dialog id="modal-ai-deepdive" class="modal-form">
+        <div class="modal-box card" style="max-width: 750px; width: 90vw;">
+          <div class="modal-header">
+            <h2 style="display: flex; align-items: center; gap: 10px;">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 24px; height: 24px; color: var(--ia-color);" class="sparkles-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 21l-.813-5.096L3.091 15 8.19 14.187 9 9l.813 5.187 5.096.813-5.096.814ZM19.07 9.14l-1.07 3.6-3.6-1.07 3.6-1.07 1.07-3.6 1.07 3.6 3.6 1.07-3.6 1.07Z" />
+              </svg>
+              <span>Caso de Uso & Guía de IA</span>
+            </h2>
+            <button id="btn-deepdive-close" class="btn-close" aria-label="Cerrar guía de IA">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div class="deepdive-body" id="deepdive-content" style="max-height: 60vh; overflow-y: auto; margin-top: 15px; padding-right: 8px;">
+            <!-- Contenido dinámico inyectado por IA -->
+          </div>
+          
+          <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: flex-end; border-top: 1px dashed var(--border-color); padding-top: 15px;">
+            <button type="button" id="btn-deepdive-done" class="btn btn-primary">Entendido</button>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- NOTIFICACIONES TOAST (PARA FEEDBACK DE ACCIONES) -->
+      <div id="toast-container" class="toast-container"></div>
+      
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
