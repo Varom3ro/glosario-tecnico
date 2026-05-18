@@ -1,31 +1,28 @@
-const CACHE_NAME = 'glossary-cache-v1';
+const CACHE_NAME = 'glossary-cache-v2';
 
-// Recursos esenciales para el primer renderizado offline
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/favicon.svg',
-  '/manifest.json'
+  './',
+  './index.html',
+  './mobile.html',
+  './favicon.svg',
+  './manifest.json'
 ];
 
-// Instalar Service Worker e inicializar caché base
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Service Worker: Precachando recursos base...');
+      console.log('Service Worker: Precachando recursos...');
       return cache.addAll(PRECACHE_ASSETS);
     }).then(() => self.skipWaiting())
   );
 });
 
-// Activar Service Worker y limpiar cachés antiguas
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('Service Worker: Limpiando caché obsoleta:', cache);
             return caches.delete(cache);
           }
         })
@@ -34,19 +31,19 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Interceptar peticiones y aplicar estrategia Network-First
-// Si hay conexión, descarga el recurso fresco y lo guarda en caché.
-// Si no hay conexión (offline), retorna el recurso guardado en caché.
 self.addEventListener('fetch', (event) => {
-  // Solo interceptar peticiones del mismo origen y peticiones HTTP/S normales
   const isHttp = event.request.url.startsWith('http://') || event.request.url.startsWith('https://');
   if (!isHttp) return;
+
+  // Don't cache Supabase API calls or Gemini proxy calls
+  if (event.request.url.includes('supabase.co') || event.request.url.includes('generativelanguage')) {
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Si la respuesta es válida, clonarla y guardarla en la caché
-        if (response && response.status === 200 && response.type === 'basic') {
+        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -55,15 +52,10 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // En caso de fallo de red (offline), buscar en la caché
         return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          
-          // Si es una petición de navegación (HTML), retornar index.html precachado como fallback
+          if (cachedResponse) return cachedResponse;
           if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
+            return caches.match('./mobile.html');
           }
         });
       })
