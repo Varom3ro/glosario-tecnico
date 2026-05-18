@@ -335,4 +335,10 @@ function renderCardHTML(t) {
 }
 
 // ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => { initAuth(); });
+document.addEventListener('DOMContentLoaded', () => {
+  // Register Service Worker for PWA install
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  }
+  initAuth();
+});
