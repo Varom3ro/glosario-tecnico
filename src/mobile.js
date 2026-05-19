@@ -178,7 +178,7 @@ $('m-terms-list').addEventListener('click', (e) => {
   openDetail(term);
 });
 
-function openDetail(term) {
+async function openDetail(term) {
   const cc = getCatClass(term.categoria);
   const kwHtml = (term.keywords||[]).map(k => `<span class="m-chip">${k}</span>`).join('') || '<span style="color:var(--text-muted);font-size:0.8rem">Sin keywords</span>';
   $('m-detail-body').innerHTML = `
@@ -190,9 +190,12 @@ function openDetail(term) {
     ${term.tip ? `<div class="m-detail-tip"><p>💡 ${term.tip}</p></div>` : ''}
     <div class="m-detail-section"><h4>Keywords</h4><div class="m-detail-chips">${kwHtml}</div></div>`;
   $('btn-m-detail-fav').style.color = term.favorito ? 'var(--warning)' : 'var(--text-secondary)';
-  // Show/hide delete based on ownership
-  const canDelete = term.user_id != null;
-  $('btn-m-detail-delete').style.display = canDelete ? '' : 'none';
+  
+  // Show/hide delete and edit based on ownership
+  const { data: { user } } = await supabase.auth.getUser();
+  const isOwner = user && term.user_id === user.id;
+  $('btn-m-detail-delete').style.display = isOwner ? '' : 'none';
+  $('btn-m-detail-edit').style.display = isOwner ? '' : 'none';
   $('m-detail-modal').classList.remove('hide');
 }
 
@@ -209,6 +212,24 @@ $('btn-m-detail-fav').addEventListener('click', async () => {
   if (idx >= 0) state.terms[idx].favorito = newFav;
   renderList();
   showToast(newFav ? '⭐ Añadido a favoritos' : 'Eliminado de favoritos');
+});
+
+$('btn-m-detail-edit').addEventListener('click', () => {
+  if (!state.selectedTerm) return;
+  const term = state.selectedTerm;
+  $('m-form-id').value = term.id;
+  $('m-form-termino').value = term.termino;
+  $('m-form-abreviatura').value = term.abreviatura || '';
+  $('m-form-categoria').value = term.categoria;
+  $('m-form-significado').value = term.significado_es;
+  $('m-form-definicion').value = term.definicion_corta;
+  $('m-form-explicacion').value = term.explicacion || '';
+  $('m-form-tip').value = term.tip || '';
+  $('m-form-keywords').value = term.keywords ? term.keywords.join(', ') : '';
+
+  $('m-create-title').textContent = 'Editar Término';
+  $('m-detail-modal').classList.add('hide');
+  $('m-create-modal').classList.remove('hide');
 });
 
 $('btn-m-detail-delete').addEventListener('click', async () => {
@@ -241,6 +262,9 @@ $('btn-m-save').addEventListener('click', async () => {
   if (!user) { showToast('Sesión expirada. Inicia sesión de nuevo.', 'danger'); return; }
 
   const todayStr = new Date().toISOString().split('T')[0];
+  const isEditing = !!$('m-form-id').value;
+  const existingTerm = isEditing ? state.terms.find(t => t.id === $('m-form-id').value) : null;
+
   const id = $('m-form-id').value || ('term-' + Date.now() + '-' + Math.random().toString(36).substr(2,5));
   const kw = $('m-form-keywords').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
 
@@ -250,9 +274,14 @@ $('btn-m-save').addEventListener('click', async () => {
     significado_es: significado, definicion_corta: definicion,
     explicacion: $('m-form-explicacion').value.trim(),
     tip: $('m-form-tip').value.trim(),
-    keywords: kw, relacionados: [],
-    favorito: false, fecha_creacion: todayStr, fecha_actualizacion: todayStr,
-    veces_consultado: 0, origen: 'mobile', estado: 'activo'
+    keywords: kw, 
+    relacionados: existingTerm ? (existingTerm.relacionados || []) : [],
+    favorito: existingTerm ? (existingTerm.favorito || false) : false, 
+    fecha_creacion: existingTerm ? existingTerm.fecha_creacion : todayStr, 
+    fecha_actualizacion: todayStr,
+    veces_consultado: existingTerm ? (existingTerm.veces_consultado || 0) : 0, 
+    origen: existingTerm ? (existingTerm.origen || 'mobile') : 'mobile', 
+    estado: existingTerm ? (existingTerm.estado || 'activo') : 'activo'
   };
 
   const { error } = await supabase.from('terms').upsert(term);

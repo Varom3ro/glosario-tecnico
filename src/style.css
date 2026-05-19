@@ -197,6 +197,15 @@ a:hover {
   aspect-ratio: 1;
 }
 
+.btn svg,
+.btn-close svg,
+.btn-icon-only svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
 .btn-text-only {
   background: none;
   border: none;
