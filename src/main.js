@@ -37,6 +37,7 @@ let deferredPrompt = null;
 // Autenticación centralizada con Supabase Cloud
 async function initAuth() {
   state.isLogin = true;
+  const loadingScreen = document.getElementById('loading-screen');
   
   // Escuchar cambios de estado de autenticación en Supabase
   db.supabase.auth.onAuthStateChange(async (event, session) => {
@@ -61,6 +62,9 @@ async function initAuth() {
       if (btnLogout) btnLogout.classList.add('hide');
       closeDetail();
     }
+
+    // Ocultar pantalla de carga una vez procesado el cambio de estado
+    if (loadingScreen) loadingScreen.classList.add('hide');
   });
 
   // Verificar sesión actual
@@ -79,6 +83,9 @@ async function initAuth() {
     appContainer.classList.add('hide');
     if (btnLogout) btnLogout.classList.add('hide');
   }
+
+  // Ocultar pantalla de carga una vez verificado el estado inicial
+  if (loadingScreen) loadingScreen.classList.add('hide');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

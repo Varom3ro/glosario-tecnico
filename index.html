@@ -28,6 +28,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <!-- ========== LOADING SCREEN ========== -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading-box">
+        <div class="loading-spinner"></div>
+        <p>Conectando con Supabase...</p>
+      </div>
+    </div>
+
     <!-- ========== AUTH SCREEN ========== -->
     <div id="auth-screen" class="auth-screen hide">
       <div class="auth-container">
@@ -62,7 +70,7 @@
       </div>
     </div>
 
-    <div id="app" class="app-container">
+    <div id="app" class="app-container hide">
       
       <!-- HEADER -->
       <header class="app-header">
