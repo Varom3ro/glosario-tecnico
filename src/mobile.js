@@ -299,77 +299,86 @@ $('btn-m-save').addEventListener('click', async () => {
 });
 
 // ===== IA AUTOFILL (via proxy) =====
-$('btn-m-autofill').addEventListener('click', async () => {
-  const termino = $('m-form-termino').value.trim();
-  if (!termino) { showToast('Escribe un término primero', 'danger'); return; }
-  const btn = $('btn-m-autofill');
-  btn.disabled = true;
-  showToast('Generando con IA...', 'success');
+// ===== IA AUTOFILL (via proxy) =====
+const btnAutofill = $('btn-m-autofill');
+if (btnAutofill) {
+  btnAutofill.addEventListener('click', async () => {
+    const termino = $('m-form-termino').value.trim();
+    if (!termino) { showToast('Escribe un término primero', 'danger'); return; }
+    btnAutofill.disabled = true;
+    btnAutofill.classList.add('loading');
+    showToast('Generando con IA...', 'success');
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { showToast('Sesión expirada', 'danger'); return; }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast('Sesión expirada', 'danger'); return; }
 
-    const prompt = `Genera una ficha técnica profesional en español para "${termino}". Devuelve JSON con: categoria (uno de: "IA","Diseño web","Programación","Desarrollo de apps","Marketing digital","UX/UI","Branding","Automatización"), abreviatura, significado_es, definicion_corta (max 150 chars), explicacion, tip, keywords (string separado por comas).`;
+      const prompt = `Genera una ficha técnica profesional en español para "${termino}". Devuelve JSON con: categoria (uno de: "IA","Diseño web","Programación","Desarrollo de apps","Marketing digital","UX/UI","Branding","Automatización"), abreviatura, significado_es, definicion_corta (max 150 chars), explicacion, tip, keywords (string separado por comas).`;
 
-    const schema = { type:"object", properties:{ categoria:{type:"string",enum:["IA","Diseño web","Programación","Desarrollo de apps","Marketing digital","UX/UI","Branding","Automatización"]}, abreviatura:{type:"string"}, significado_es:{type:"string"}, definicion_corta:{type:"string"}, explicacion:{type:"string"}, tip:{type:"string"}, keywords:{type:"string"} }, required:["categoria","significado_es","definicion_corta","explicacion","tip","keywords"] };
+      const schema = { type:"object", properties:{ categoria:{type:"string",enum:["IA","Diseño web","Programación","Desarrollo de apps","Marketing digital","UX/UI","Branding","Automatización"]}, abreviatura:{type:"string"}, significado_es:{type:"string"}, definicion_corta:{type:"string"}, explicacion:{type:"string"}, tip:{type:"string"}, keywords:{type:"string"} }, required:["categoria","significado_es","definicion_corta","explicacion","tip","keywords"] };
 
-    const res = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', type: 'autofill', schema })
-    });
+      const res = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', type: 'autofill', schema })
+      });
 
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Error ${res.status}`); }
-    const data = await res.json();
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!raw) throw new Error('Respuesta vacía de la IA');
-    const parsed = JSON.parse(raw.trim());
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Error ${res.status}`); }
+      const data = await res.json();
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!raw) throw new Error('Respuesta vacía de la IA');
+      const parsed = JSON.parse(raw.trim());
 
-    if (parsed.categoria) $('m-form-categoria').value = parsed.categoria;
-    if (parsed.abreviatura) $('m-form-abreviatura').value = parsed.abreviatura;
-    if (parsed.significado_es) $('m-form-significado').value = parsed.significado_es;
-    if (parsed.definicion_corta) $('m-form-definicion').value = parsed.definicion_corta;
-    if (parsed.explicacion) $('m-form-explicacion').value = parsed.explicacion;
-    if (parsed.tip) $('m-form-tip').value = parsed.tip;
-    if (parsed.keywords) $('m-form-keywords').value = parsed.keywords;
-    showToast('✨ Autocompletado con IA', 'success');
-  } catch (err) {
-    showToast('Error IA: ' + err.message, 'danger');
-  } finally {
-    btn.disabled = false;
-  }
-});
+      if (parsed.categoria) $('m-form-categoria').value = parsed.categoria;
+      if (parsed.abreviatura) $('m-form-abreviatura').value = parsed.abreviatura;
+      if (parsed.significado_es) $('m-form-significado').value = parsed.significado_es;
+      if (parsed.definicion_corta) $('m-form-definicion').value = parsed.definicion_corta;
+      if (parsed.explicacion) $('m-form-explicacion').value = parsed.explicacion;
+      if (parsed.tip) $('m-form-tip').value = parsed.tip;
+      if (parsed.keywords) $('m-form-keywords').value = parsed.keywords;
+      showToast('✨ Autocompletado con IA', 'success');
+    } catch (err) {
+      showToast('Error IA: ' + err.message, 'danger');
+    } finally {
+      btnAutofill.disabled = false;
+      btnAutofill.classList.remove('loading');
+    }
+  });
+}
 
 // ===== IA DEEPDIVE =====
-$('btn-m-ia-expand').addEventListener('click', async () => {
-  if (!state.selectedTerm) return;
-  const term = state.selectedTerm;
-  showToast('Generando guía con IA...', 'success');
+const btnMIAExpand = $('btn-m-ia-expand');
+if (btnMIAExpand) {
+  btnMIAExpand.addEventListener('click', async () => {
+    if (!state.selectedTerm) return;
+    const term = state.selectedTerm;
+    showToast('Generando guía con IA...', 'success');
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { showToast('Sesión expirada', 'danger'); return; }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { showToast('Sesión expirada', 'danger'); return; }
 
-    const prompt = `Genera una guía de estudio en HTML para "${term.termino}" (${term.categoria}). Incluye: caso de uso real (<h3>), código práctico (<pre><code>), y buenas prácticas (<ul><li>). En español, HTML puro.`;
+      const prompt = `Genera una guía de estudio en HTML para "${term.termino}" (${term.categoria}). Incluye: caso de uso real (<h3>), código práctico (<pre><code>), y buenas prácticas (<ul><li>). En español, HTML puro.`;
 
-    const res = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', type: 'deepdive' })
-    });
+      const res = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', type: 'deepdive' })
+      });
 
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Error ${res.status}`); }
-    const data = await res.json();
-    const html = data.candidates?.[0]?.content?.parts?.[0]?.text || '<p>No se pudo generar contenido.</p>';
-    $('m-ia-content').innerHTML = html;
-    $('m-ia-modal').classList.remove('hide');
-  } catch (err) {
-    showToast('Error IA: ' + err.message, 'danger');
-  }
-});
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Error ${res.status}`); }
+      const data = await res.json();
+      const html = data.candidates?.[0]?.content?.parts?.[0]?.text || '<p>No se pudo generar contenido.</p>';
+      $('m-ia-content').innerHTML = html;
+      $('m-ia-modal').classList.remove('hide');
+    } catch (err) {
+      showToast('Error IA: ' + err.message, 'danger');
+    }
+  });
+}
 
-$('btn-m-ia-back').addEventListener('click', () => { $('m-ia-modal').classList.add('hide'); });
+const btnMIABack = $('btn-m-ia-back');
+if (btnMIABack) btnMIABack.addEventListener('click', () => { $('m-ia-modal').classList.add('hide'); });
 
 // ===== BOTTOM NAV =====
 document.querySelectorAll('.m-nav-item').forEach(btn => {

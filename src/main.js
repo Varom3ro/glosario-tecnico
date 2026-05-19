@@ -1031,105 +1031,107 @@ function setupEventListeners() {
   const btnDeepdiveDone = document.getElementById('btn-deepdive-done');
   const deepdiveContent = document.getElementById('deepdive-content');
 
-  btnIAGenerate.addEventListener('click', async () => {
-    if (!state.selectedTermId) return;
+  if (btnIAGenerate) {
+    btnIAGenerate.addEventListener('click', async () => {
+      if (!state.selectedTermId) return;
 
-    const apiKey = localStorage.getItem('glossary_gemini_api_key');
-    const model = localStorage.getItem('glossary_gemini_model') || 'gemini-1.5-flash';
+      const apiKey = localStorage.getItem('glossary_gemini_api_key');
+      const model = localStorage.getItem('glossary_gemini_model') || 'gemini-1.5-flash';
 
-    if (!apiKey) {
-      showToast('Por favor, ingresa tu API Key de Gemini en los Ajustes primero.', 'warning');
-      inputApiKey.value = '';
-      selectModel.value = model;
-      modalSettings.showModal();
-      return;
-    }
-
-    const term = await db.get(state.selectedTermId);
-    if (!term) return;
-
-    // Cambiar estado a cargando
-    const originalHTML = btnIAGenerate.innerHTML;
-    btnIAGenerate.disabled = true;
-    btnIAGenerate.classList.add('loading');
-    btnIAGenerate.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="sparkles-icon spin-slow">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-      </svg>
-      <span>Generando Guía Práctica...</span>
-    `;
-
-    showToast(`Generando guía práctica en tiempo real con ${model}...`, 'info');
-
-    try {
-      const promptText = `Actúa como un Ingeniero de Software Principal y experto en pedagogía técnica. Genera una guía de estudio exhaustiva, ultra-detallada y de alta gama en formato HTML limpio para el término técnico "${term.termino}" en la categoría "${term.categoria}". Debe incluir:
-      - Un subtítulo con la etiqueta <h3> que diga "Caso de Uso en la Vida Real" y una explicación profunda y clara de cómo se aplica este concepto en un producto real.
-      - Un subtítulo con la etiqueta <h3> que diga "Código Práctico o Implementación" junto a una demostración en código comentada usando <pre><code>.
-      - Un subtítulo con la etiqueta <h3> que diga "Buenas Prácticas e Implicaciones" con una lista de viñetas (<ul> y <li>) enumerando buenas prácticas y errores comunes a evitar.
-      - Escribe de manera extremadamente profesional en español. Utiliza etiquetas HTML semánticas puras (<h3>, <p>, <ul>, <li>, <strong>, <pre>, <code>). No utilices Markdown (sin triple acento grave o asteriscos). Genera directamente código HTML limpio.`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: promptText
-                }
-              ]
-            }
-          ]
-        })
-      });
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error("Límite de cuota gratuito superado (HTTP 429). Por favor, espera 30 segundos.");
-        }
-        let errorDetail = `Status ${response.status}`;
-        try {
-          const errJson = await response.json();
-          if (errJson.error && errJson.error.message) {
-            errorDetail = errJson.error.message;
-          }
-        } catch (_) {}
-        throw new Error(errorDetail);
-      }
-
-      const data = await response.json();
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts[0]) {
-        throw new Error('No se recibió contenido válido de la API.');
-      }
-
-      const htmlResult = data.candidates[0].content.parts[0].text;
-      
-      // Inyectar y abrir
-      deepdiveContent.innerHTML = htmlResult;
-      modalDeepdive.showModal();
-      showToast('¡Guía de IA de alta fidelidad generada!', 'success');
-
-    } catch (error) {
-      console.error('Error al generar deepdive:', error);
-      showToast(`Error al expandir con IA: ${error.message}`, 'danger');
-      if (error.message.includes('429') || error.message.includes('cuota') || error.message.includes('quota') || error.message.includes('Quota')) {
-        startCooldown(btnIAGenerate, originalHTML, 30);
+      if (!apiKey) {
+        showToast('Por favor, ingresa tu API Key de Gemini en los Ajustes primero.', 'warning');
+        inputApiKey.value = '';
+        selectModel.value = model;
+        modalSettings.showModal();
         return;
       }
-    } finally {
-      if (!btnIAGenerate.classList.contains('btn-cooldown')) {
-        btnIAGenerate.disabled = false;
-        btnIAGenerate.classList.remove('loading');
-        btnIAGenerate.innerHTML = originalHTML;
-      }
-    }
-  });
 
-  btnDeepdiveClose.addEventListener('click', () => modalDeepdive.close());
-  btnDeepdiveDone.addEventListener('click', () => modalDeepdive.close());
+      const term = await db.get(state.selectedTermId);
+      if (!term) return;
+
+      // Cambiar estado a cargando
+      const originalHTML = btnIAGenerate.innerHTML;
+      btnIAGenerate.disabled = true;
+      btnIAGenerate.classList.add('loading');
+      btnIAGenerate.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="sparkles-icon spin-slow">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+        </svg>
+        <span>Generando Guía Práctica...</span>
+      `;
+
+      showToast(`Generando guía práctica en tiempo real con ${model}...`, 'info');
+
+      try {
+        const promptText = `Actúa como un Ingeniero de Software Principal y experto en pedagogía técnica. Genera una guía de estudio exhaustiva, ultra-detallada y de alta gama en formato HTML limpio para el término técnico "${term.termino}" en la categoría "${term.categoria}". Debe incluir:
+        - Un subtítulo con la etiqueta <h3> que diga "Caso de Uso en la Vida Real" y una explicación profunda y clara de cómo se aplica este concepto en un producto real.
+        - Un subtítulo con la etiqueta <h3> que diga "Código Práctico o Implementación" junto a una demostración en código comentada usando <pre><code>.
+        - Un subtítulo con la etiqueta <h3> que diga "Buenas Prácticas e Implicaciones" con una lista de viñetas (<ul> y <li>) enumerando buenas prácticas y errores comunes a evitar.
+        - Escribe de manera extremadamente profesional en español. Utiliza etiquetas HTML semánticas puras (<h3>, <p>, <ul>, <li>, <strong>, <pre>, <code>). No utilices Markdown (sin triple acento grave o asteriscos). Genera directamente código HTML limpio.`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: promptText
+                  }
+                ]
+              }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            throw new Error("Límite de cuota gratuito superado (HTTP 429). Por favor, espera 30 segundos.");
+          }
+          let errorDetail = `Status ${response.status}`;
+          try {
+            const errJson = await response.json();
+            if (errJson.error && errJson.error.message) {
+              errorDetail = errJson.error.message;
+            }
+          } catch (_) {}
+          throw new Error(errorDetail);
+        }
+
+        const data = await response.json();
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts[0]) {
+          throw new Error('No se recibió contenido válido de la API.');
+        }
+
+        const htmlResult = data.candidates[0].content.parts[0].text;
+        
+        // Inyectar y abrir
+        deepdiveContent.innerHTML = htmlResult;
+        modalDeepdive.showModal();
+        showToast('¡Guía de IA de alta fidelidad generada!', 'success');
+
+      } catch (error) {
+        console.error('Error al generar deepdive:', error);
+        showToast(`Error al expandir con IA: ${error.message}`, 'danger');
+        if (error.message.includes('429') || error.message.includes('cuota') || error.message.includes('quota') || error.message.includes('Quota')) {
+          startCooldown(btnIAGenerate, originalHTML, 30);
+          return;
+        }
+      } finally {
+        if (!btnIAGenerate.classList.contains('btn-cooldown')) {
+          btnIAGenerate.disabled = false;
+          btnIAGenerate.classList.remove('loading');
+          btnIAGenerate.innerHTML = originalHTML;
+        }
+      }
+    });
+  }
+
+  if (btnDeepdiveClose) btnDeepdiveClose.addEventListener('click', () => modalDeepdive && modalDeepdive.close());
+  if (btnDeepdiveDone) btnDeepdiveDone.addEventListener('click', () => modalDeepdive && modalDeepdive.close());
 
   // Toggle de Tema Visual
   document.getElementById('btn-theme-toggle').addEventListener('click', toggleTheme);

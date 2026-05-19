@@ -260,11 +260,31 @@ body {
 }
 .m-btn-ia:active { opacity: 0.8; transform: scale(0.98); }
 .m-btn-ia-mini {
-  width: 44px; height: 44px; border-radius: 12px; border: 1px dashed rgba(192,132,252,0.35);
-  background: rgba(139,92,246,0.1); color: var(--ia-color); cursor: pointer; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px dashed rgba(192,132,252,0.35);
+  background: rgba(139,92,246,0.1);
+  color: var(--ia-color);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
 }
-.sparkles-icon { width: 18px; height: 18px; }
+.m-btn-ia-mini.loading {
+  background: rgba(139,92,246,0.25);
+  border-color: var(--ia-color);
+}
+@keyframes m-spin-sparkles {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.m-btn-ia-mini.loading .sparkles-icon {
+  animation: m-spin-sparkles 1.5s infinite linear;
+}
+.sparkles-icon { width: 18px; height: 18px; transition: transform 0.3s ease; }
 
 /* ===== IA CONTENT ===== */
 .m-ia-content { flex: 1; padding: 20px 16px; overflow-y: auto; line-height: 1.7; font-size: 0.9rem; color: var(--text-secondary); }
