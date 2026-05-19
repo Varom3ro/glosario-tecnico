@@ -7,7 +7,19 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const PROXY_URL = `${SUPABASE_URL}/functions/v1/gemini-proxy`;
 
-const CATEGORIES = ['IA','Diseño web','Programación','Desarrollo de apps','Marketing digital','UX/UI','Branding','Automatización'];
+// Extrae dinámicamente las categorías únicas de los términos cargados en Supabase
+function getDynamicCategories(allTerms) {
+  const cats = new Set();
+  allTerms.forEach(t => {
+    if (t.categoria && t.categoria.trim() !== '') {
+      cats.add(t.categoria.trim());
+    }
+  });
+  if (cats.size === 0) {
+    return ['IA', 'Diseño web', 'Programación', 'Desarrollo de apps', 'Marketing digital', 'UX/UI', 'Branding', 'Automatización'];
+  }
+  return Array.from(cats).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
 
 // ===== STATE =====
 const state = { query: '', category: null, terms: [], selectedTerm: null, isLogin: true };
@@ -109,9 +121,17 @@ function getFilteredTerms() {
 // ===== RENDERING =====
 function renderCategories() {
   const el = $('m-categories-list');
-  el.innerHTML = CATEGORIES.map(c => {
-    const count = state.terms.filter(t => t.categoria === c).length;
-    const active = state.category === c ? 'active' : '';
+  const dynamicCats = getDynamicCategories(state.terms);
+
+  // Rellenar datalist del formulario móvil para autocompletado flexible
+  const datalist = $('m-categories-datalist');
+  if (datalist) {
+    datalist.innerHTML = dynamicCats.map(c => `<option value="${c}"></option>`).join('');
+  }
+
+  el.innerHTML = dynamicCats.map(c => {
+    const count = state.terms.filter(t => t.categoria?.toLowerCase().trim() === c.toLowerCase().trim()).length;
+    const active = state.category?.toLowerCase().trim() === c.toLowerCase().trim() ? 'active' : '';
     return `<button class="m-cat-pill ${active}" data-cat="${c}">${c} (${count})</button>`;
   }).join('');
 }
@@ -239,6 +259,12 @@ $('btn-m-save').addEventListener('click', async () => {
   if (error) { showToast('Error al guardar: ' + error.message, 'danger'); return; }
 
   $('m-create-modal').classList.add('hide');
+  
+  // Limpiar buscador principal para reflejar de inmediato el nuevo término
+  state.query = '';
+  const searchInput = $('m-input-search');
+  if (searchInput) searchInput.value = '';
+
   showToast('✅ Término guardado en la nube');
   await loadTerms();
 });
@@ -262,7 +288,7 @@ $('btn-m-autofill').addEventListener('click', async () => {
     const res = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ prompt, model: 'gemini-1.5-flash', type: 'autofill', schema })
+      body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', type: 'autofill', schema })
     });
 
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Error ${res.status}`); }
@@ -301,7 +327,7 @@ $('btn-m-ia-expand').addEventListener('click', async () => {
     const res = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ prompt, model: 'gemini-1.5-flash', type: 'deepdive' })
+      body: JSON.stringify({ prompt, model: 'gemini-3-flash-preview', type: 'deepdive' })
     });
 
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Error ${res.status}`); }

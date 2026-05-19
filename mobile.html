@@ -219,17 +219,8 @@
               </div>
               <div class="m-form-group">
                 <label for="m-form-categoria">Categoría *</label>
-                <select id="m-form-categoria" required>
-                  <option value="" disabled selected>Seleccionar...</option>
-                  <option value="IA">IA</option>
-                  <option value="Diseño web">Diseño Web</option>
-                  <option value="Programación">Programación</option>
-                  <option value="Desarrollo de apps">Desarrollo de Apps</option>
-                  <option value="Marketing digital">Marketing Digital</option>
-                  <option value="UX/UI">UX/UI</option>
-                  <option value="Branding">Branding</option>
-                  <option value="Automatización">Automatización</option>
-                </select>
+                <input type="text" id="m-form-categoria" list="m-categories-datalist" placeholder="Seleccionar o escribir..." required autocomplete="off" />
+                <datalist id="m-categories-datalist"></datalist>
               </div>
             </div>
 

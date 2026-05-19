@@ -10,20 +10,23 @@ const state = {
   selectedCategory: null,
   selectedTermId: null,
   recentTermIds: JSON.parse(localStorage.getItem('glossary_recents') || '[]'),
-  activeTab: 'tab-definition'
+  activeTab: 'tab-definition',
+  isLogin: true
 };
 
-// Categorías iniciales fijas para asegurar coincidencia
-const CATEGORIES_LIST = [
-  'IA',
-  'Diseño web',
-  'Programación',
-  'Desarrollo de apps',
-  'Marketing digital',
-  'UX/UI',
-  'Branding',
-  'Automatización'
-];
+// Extrae dinámicamente las categorías únicas de los términos cargados en la nube ("libre albedrío")
+function getDynamicCategories(allTerms) {
+  const cats = new Set();
+  allTerms.forEach(t => {
+    if (t.categoria && t.categoria.trim() !== '') {
+      cats.add(t.categoria.trim());
+    }
+  });
+  if (cats.size === 0) {
+    return ['IA', 'Diseño web', 'Programación', 'Desarrollo de apps', 'Marketing digital', 'UX/UI', 'Branding', 'Automatización'];
+  }
+  return Array.from(cats).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
 
 // Instancia diferida para instalación de PWA
 let deferredPrompt = null;
@@ -31,17 +34,62 @@ let deferredPrompt = null;
 // ==========================================================================
 // INICIALIZACIÓN DE LA APP
 // ==========================================================================
+// Autenticación centralizada con Supabase Cloud
+async function initAuth() {
+  state.isLogin = true;
+  
+  // Escuchar cambios de estado de autenticación en Supabase
+  db.supabase.auth.onAuthStateChange(async (event, session) => {
+    const authScreen = document.getElementById('auth-screen');
+    const appContainer = document.getElementById('app');
+    const btnLogout = document.getElementById('btn-logout');
+    
+    if (session) {
+      authScreen.classList.add('hide');
+      appContainer.classList.remove('hide');
+      if (btnLogout) btnLogout.classList.remove('hide');
+      
+      // Limpiar error de auth
+      const authErr = document.getElementById('auth-error');
+      if (authErr) authErr.classList.add('hide');
+      
+      // Cargar datos
+      await loadAndRender();
+    } else {
+      authScreen.classList.remove('hide');
+      appContainer.classList.add('hide');
+      if (btnLogout) btnLogout.classList.add('hide');
+      closeDetail();
+    }
+  });
+
+  // Verificar sesión actual
+  const { data: { session } } = await db.supabase.auth.getSession();
+  const authScreen = document.getElementById('auth-screen');
+  const appContainer = document.getElementById('app');
+  const btnLogout = document.getElementById('btn-logout');
+
+  if (session) {
+    authScreen.classList.add('hide');
+    appContainer.classList.remove('hide');
+    if (btnLogout) btnLogout.classList.remove('hide');
+    await loadAndRender();
+  } else {
+    authScreen.classList.remove('hide');
+    appContainer.classList.add('hide');
+    if (btnLogout) btnLogout.classList.add('hide');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // 1. Configurar Tema Visual (Claro / Oscuro)
   initTheme();
 
-  // 2. Inicializar IndexedDB
+  // 2. Inicializar Supabase y Auth
   try {
-    showToast('Iniciando base de datos local...', 'info');
-    await db.init();
-    showToast('Base de datos conectada correctamente.', 'success');
+    await initAuth();
   } catch (error) {
-    showToast('Error al inicializar la base de datos local.', 'danger');
+    showToast('Error de conexión con la nube de Supabase.', 'danger');
     console.error(error);
   }
 
@@ -51,10 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 4. Configurar instalador PWA
   setupPWAInstall();
 
-  // 5. Cargar datos iniciales en la interfaz
-  await loadAndRender();
-
-  // 6. Registrar Service Worker para soporte offline PWA
+  // 5. Registrar Service Worker para soporte offline PWA
   registerServiceWorker();
 });
 
@@ -174,19 +219,29 @@ function renderCategoriesFilter(allTerms) {
   const mobileContainer = document.getElementById('mobile-categories-list');
   const clearBtn = document.getElementById('btn-clear-category');
 
-  // Calcular recuentos de ítems por categoría
+  const dynamicCats = getDynamicCategories(allTerms);
+
+  // Calcular recuentos de ítems por categoría de forma dinámica e insensible a mayúsculas
   const counts = {};
-  CATEGORIES_LIST.forEach(cat => counts[cat] = 0);
+  dynamicCats.forEach(cat => counts[cat] = 0);
   allTerms.forEach(term => {
-    if (counts[term.categoria] !== undefined) {
-      counts[term.categoria]++;
+    const trimmedCat = term.categoria?.trim();
+    const matchedCat = dynamicCats.find(c => c.toLowerCase() === trimmedCat?.toLowerCase());
+    if (matchedCat) {
+      counts[matchedCat]++;
     }
   });
 
+  // Rellenar dinámicamente el datalist del formulario modal para el autocompletado interactivo
+  const datalist = document.getElementById('categories-datalist');
+  if (datalist) {
+    datalist.innerHTML = dynamicCats.map(cat => `<option value="${cat}"></option>`).join('');
+  }
+
   // Generar HTML de categorías
   const getCategoriesHtml = () => {
-    return CATEGORIES_LIST.map(cat => {
-      const activeClass = state.selectedCategory === cat ? 'active' : '';
+    return dynamicCats.map(cat => {
+      const activeClass = state.selectedCategory?.toLowerCase() === cat.toLowerCase() ? 'active' : '';
       
       // Mapear categoría a su clase CSS correspondiente
       const mapping = {
@@ -199,26 +254,28 @@ function renderCategoriesFilter(allTerms) {
         'branding': 'cat-branding',
         'automatización': 'cat-auto'
       };
-      const cleanCat = mapping[cat.toLowerCase().trim()] || 'cat-prog';
+      const cleanCat = mapping[cat.toLowerCase()] || 'cat-prog';
 
       return `
         <button class="category-pill ${cleanCat} ${activeClass}" data-category="${cat}">
           <span>${cat}</span>
-          <span style="font-size: 0.7rem; font-weight: 800; opacity: 0.8; margin-left: 4px;">(${counts[cat]})</span>
+          <span style="font-size: 0.7rem; font-weight: 800; opacity: 0.8; margin-left: 4px;">(${counts[cat] || 0})</span>
         </button>
       `;
     }).join('');
   };
 
   const htmlContent = getCategoriesHtml();
-  container.innerHTML = htmlContent;
-  mobileContainer.innerHTML = htmlContent;
+  if (container) container.innerHTML = htmlContent;
+  if (mobileContainer) mobileContainer.innerHTML = htmlContent;
 
   // Mostrar u ocultar botón de limpiar filtros
-  if (state.selectedCategory) {
-    clearBtn.classList.remove('hide');
-  } else {
-    clearBtn.classList.add('hide');
+  if (clearBtn) {
+    if (state.selectedCategory) {
+      clearBtn.classList.remove('hide');
+    } else {
+      clearBtn.classList.add('hide');
+    }
   }
 }
 
@@ -262,6 +319,16 @@ async function openDetail(id) {
     favBtn.classList.remove('is-favorite');
   }
 
+  // Verificar la propiedad del término (el creador coincide con el usuario autenticado)
+  const { data: { user } } = await db.supabase.auth.getUser();
+  const isOwner = user && updatedTerm.user_id === user.id;
+
+  // Mostrar u ocultar botones de editar y eliminar según permisos
+  const btnEdit = document.getElementById('btn-drawer-edit');
+  const btnDelete = document.getElementById('btn-drawer-delete');
+  if (btnEdit) btnEdit.classList.toggle('hide', !isOwner);
+  if (btnDelete) btnDelete.classList.toggle('hide', !isOwner);
+
   // Añadir evento al botón de pronunciación por voz en inglés
   const pronounceBtn = bodyContainer.querySelector('.pronounce-btn');
   if (pronounceBtn) {
@@ -294,7 +361,7 @@ async function openDetail(id) {
       if (matched) {
         openDetail(matched.id);
       } else {
-        showToast(`El término "${termName}" no está creado en IndexedDB`, 'warning');
+        showToast(`El término "${termName}" no está creado en Supabase`, 'warning');
       }
     });
   });
@@ -413,10 +480,17 @@ async function handleFormSubmit(e) {
   try {
     const savedTerm = await db.save(termData);
     showToast(
-      isNew ? `Término "${savedTerm.termino}" creado con éxito en IndexedDB!` : `Término "${savedTerm.termino}" actualizado correctamente!`,
+      isNew ? `Término "${savedTerm.termino}" creado con éxito en la nube!` : `Término "${savedTerm.termino}" actualizado correctamente!`,
       'success'
     );
     closeModal();
+
+    // Limpiar buscador principal para reflejar de inmediato el concepto guardado
+    const searchInput = document.getElementById('input-search');
+    const clearSearchBtn = document.getElementById('btn-clear-search');
+    if (searchInput) searchInput.value = '';
+    state.currentQuery = '';
+    if (clearSearchBtn) clearSearchBtn.classList.add('hide');
     
     // Recargar interfaz
     await loadAndRender();
@@ -426,7 +500,7 @@ async function handleFormSubmit(e) {
       openDetail(id);
     }
   } catch (error) {
-    showToast('Error al guardar el término localmente.', 'danger');
+    showToast('Error al guardar el término en la nube de Supabase.', 'danger');
     console.error(error);
   }
 }
@@ -435,12 +509,12 @@ async function handleDeleteTerm(id) {
   const term = await db.get(id);
   if (!term) return;
 
-  const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar permanentemente el término "${term.termino}" de tu IndexedDB? Esta acción es irreversible.`);
+  const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar permanentemente el término "${term.termino}" de la nube de Supabase? Esta acción es irreversible.`);
   if (!confirmDelete) return;
 
   try {
     await db.delete(id);
-    showToast(`Término "${term.termino}" eliminado con éxito.`, 'warning');
+    showToast(`Término "${term.termino}" eliminado con éxito de Supabase.`, 'warning');
     closeDetail();
     
     // Quitar de Recientes
@@ -449,7 +523,7 @@ async function handleDeleteTerm(id) {
 
     await loadAndRender();
   } catch (error) {
-    showToast('Error al intentar eliminar el concepto.', 'danger');
+    showToast('Error al intentar eliminar el concepto de la nube.', 'danger');
     console.error(error);
   }
 }
@@ -462,7 +536,7 @@ async function toggleTermFavorite(id) {
   await db.save(term);
 
   showToast(
-    term.favorito ? `"${term.termino}" agregado a favoritos!` : `"${term.termino}" removido de favoritos.`,
+    term.favorito ? `"${term.termino}" agregado a favoritos en Supabase!` : `"${term.termino}" removido de favoritos.`,
     'info'
   );
 
@@ -605,6 +679,73 @@ function setupEventListeners() {
   const currentSavedModel = localStorage.getItem('glossary_gemini_model');
   if (!currentSavedModel || currentSavedModel === 'gemini-3-flash' || currentSavedModel === 'gemini-2.0-flash') {
     localStorage.setItem('glossary_gemini_model', 'gemini-1.5-flash');
+  }
+
+  // 10. Autenticación Supabase (Inicio de Sesión, Registro y Salida)
+  const authForm = document.getElementById('auth-form');
+  if (authForm) {
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const btn = document.getElementById('btn-auth-submit');
+      const errDiv = document.getElementById('auth-error');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<span>Procesando...</span>';
+      errDiv.classList.add('hide');
+
+      try {
+        let result;
+        if (state.isLogin) {
+          result = await db.supabase.auth.signInWithPassword({ email, password });
+        } else {
+          result = await db.supabase.auth.signUp({ email, password });
+        }
+        
+        if (result.error) throw result.error;
+
+        if (!state.isLogin && result.data?.user && !result.data.session) {
+          showToast('¡Cuenta creada! Revisa tu correo para confirmar.', 'success');
+          errDiv.textContent = 'Revisa tu bandeja de entrada para confirmar tu correo.';
+          errDiv.classList.remove('hide');
+          errDiv.style.borderColor = 'rgba(16,185,129,0.3)';
+          errDiv.style.color = 'var(--success)';
+          errDiv.style.background = 'rgba(16,185,129,0.1)';
+        } else if (result.data.session) {
+          showToast('¡Sesión iniciada con éxito!', 'success');
+        }
+      } catch (err) {
+        errDiv.textContent = err.message || 'Error de autenticación.';
+        errDiv.classList.remove('hide');
+        errDiv.style.borderColor = ''; errDiv.style.color = ''; errDiv.style.background = '';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>${state.isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</span>`;
+      }
+    });
+  }
+
+  const btnAuthToggle = document.getElementById('btn-auth-toggle');
+  if (btnAuthToggle) {
+    btnAuthToggle.addEventListener('click', () => {
+      state.isLogin = !state.isLogin;
+      document.getElementById('btn-auth-submit').innerHTML = `<span>${state.isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</span>`;
+      btnAuthToggle.innerHTML = state.isLogin 
+        ? '¿No tienes cuenta? <strong>Regístrate</strong>' 
+        : '¿Ya tienes cuenta? <strong>Inicia Sesión</strong>';
+      document.getElementById('auth-error').classList.add('hide');
+    });
+  }
+
+  const btnLogout = document.getElementById('btn-logout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        await db.supabase.auth.signOut();
+        showToast('Sesión cerrada correctamente.', 'info');
+      }
+    });
   }
 
   // 7. Modales de Ajustes de API
