@@ -7,7 +7,32 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 class GlossaryDatabase {
   constructor() {
     this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Carga inicial desde caché persistente en localStorage para arranque instantáneo (Offline-First)
     this.cachedTerms = [];
+    try {
+      const savedCache = localStorage.getItem('glossary_terms_cache');
+      if (savedCache) {
+        this.cachedTerms = JSON.parse(savedCache);
+      }
+    } catch (e) {
+      console.error('Error al inicializar la caché de términos de localStorage:', e);
+    }
+  }
+
+  /**
+   * Envoltura defensiva para evitar consultas colgadas por problemas de red/GoTrue en Supabase.
+   */
+  async withTimeout(promise, timeoutMs = 3500, errorMsg = 'Tiempo de espera de conexión agotado') {
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(errorMsg)), timeoutMs);
+    });
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /**
@@ -48,18 +73,29 @@ class GlossaryDatabase {
   async getAll() {
     try {
       this.updateSyncUI('syncing', 'Sincronizando...');
-      const { data, error } = await this.supabase
+      
+      const queryPromise = this.supabase
         .from('terms')
         .select('*')
         .order('fecha_actualizacion', { ascending: false });
 
+      const { data, error } = await this.withTimeout(queryPromise, 3500, 'Supabase no responde (Timeout)');
+
       if (error) throw error;
 
       this.cachedTerms = data || [];
+      
+      // Guardar en caché persistente local
+      try {
+        localStorage.setItem('glossary_terms_cache', JSON.stringify(this.cachedTerms));
+      } catch (errCache) {
+        console.error('Error al guardar caché en localStorage:', errCache);
+      }
+
       this.updateSyncUI('connected', 'Sincronizado');
       return this.cachedTerms;
     } catch (err) {
-      console.warn('Error al obtener términos de Supabase, usando caché local en memoria:', err);
+      console.warn('Error al obtener términos de Supabase (usando caché local):', err);
       this.updateSyncUI('offline', 'Modo Local');
       return this.cachedTerms;
     }
@@ -70,17 +106,19 @@ class GlossaryDatabase {
    */
   async get(id) {
     try {
-      const { data, error } = await this.supabase
+      const getPromise = this.supabase
         .from('terms')
         .select('*')
         .eq('id', id)
         .single();
 
+      const { data, error } = await this.withTimeout(getPromise, 2500, 'Supabase no responde (Timeout)');
+
       if (error) throw error;
       return data;
     } catch (err) {
       console.error(`Error obteniendo término con id ${id}:`, err);
-      // Fallback a caché
+      // Fallback instantáneo a la caché local persistida
       return this.cachedTerms.find(t => t.id === id) || null;
     }
   }
@@ -119,22 +157,33 @@ class GlossaryDatabase {
     const prepared = this._prepareForSupabase(term);
 
     this.updateSyncUI('syncing', 'Guardando...');
-    const { error } = await this.supabase
+    
+    const upsertPromise = this.supabase
       .from('terms')
       .upsert(prepared);
 
-    if (error) {
-      this.updateSyncUI('offline', 'Error Guardado');
-      throw error;
+    try {
+      const { error } = await this.withTimeout(upsertPromise, 3500, 'Tiempo de espera de guardado agotado');
+      if (error) throw error;
+      this.updateSyncUI('connected', 'Sincronizado');
+    } catch (err) {
+      console.warn('Error al guardar en Supabase, guardando localmente en caché:', err);
+      this.updateSyncUI('offline', 'Modo Local');
     }
 
-    this.updateSyncUI('connected', 'Sincronizado');
-    // Actualizar caché
+    // Actualizar caché de inmediato
     const idx = this.cachedTerms.findIndex(t => t.id === term.id);
     if (idx >= 0) {
       this.cachedTerms[idx] = prepared;
     } else {
       this.cachedTerms.unshift(prepared);
+    }
+
+    // Persistir caché
+    try {
+      localStorage.setItem('glossary_terms_cache', JSON.stringify(this.cachedTerms));
+    } catch (errCache) {
+      console.error('Error al persistir caché:', errCache);
     }
 
     return prepared;
@@ -145,18 +194,27 @@ class GlossaryDatabase {
    */
   async delete(id) {
     this.updateSyncUI('syncing', 'Eliminando...');
-    const { error } = await this.supabase
+    
+    const deletePromise = this.supabase
       .from('terms')
       .delete()
       .eq('id', id);
 
-    if (error) {
-      this.updateSyncUI('offline', 'Error Borrado');
-      throw error;
+    try {
+      const { error } = await this.withTimeout(deletePromise, 3500, 'Tiempo de espera de borrado agotado');
+      if (error) throw error;
+      this.updateSyncUI('connected', 'Sincronizado');
+    } catch (err) {
+      console.warn('Error al borrar en Supabase, removiendo de caché local:', err);
+      this.updateSyncUI('offline', 'Modo Local');
     }
 
-    this.updateSyncUI('connected', 'Sincronizado');
     this.cachedTerms = this.cachedTerms.filter(t => t.id !== id);
+    try {
+      localStorage.setItem('glossary_terms_cache', JSON.stringify(this.cachedTerms));
+    } catch (errCache) {
+      console.error('Error al persistir caché tras borrado:', errCache);
+    }
     return true;
   }
 
@@ -168,16 +226,24 @@ class GlossaryDatabase {
     if (term) {
       term.veces_consultado = (term.veces_consultado || 0) + 1;
       
-      const { error } = await this.supabase
+      const updatePromise = this.supabase
         .from('terms')
         .update({ veces_consultado: term.veces_consultado })
         .eq('id', id);
 
-      if (error) {
-        console.error('Error actualizando contador en Supabase:', error);
-      } else {
-        const idx = this.cachedTerms.findIndex(t => t.id === id);
-        if (idx >= 0) this.cachedTerms[idx].veces_consultado = term.veces_consultado;
+      try {
+        const { error } = await this.withTimeout(updatePromise, 2500, 'Timeout al actualizar visitas');
+        if (error) throw error;
+      } catch (err) {
+        console.warn('Error actualizando contador en Supabase, registrando localmente:', err);
+      }
+
+      const idx = this.cachedTerms.findIndex(t => t.id === id);
+      if (idx >= 0) {
+        this.cachedTerms[idx].veces_consultado = term.veces_consultado;
+        try {
+          localStorage.setItem('glossary_terms_cache', JSON.stringify(this.cachedTerms));
+        } catch (e) {}
       }
     }
     return term;
