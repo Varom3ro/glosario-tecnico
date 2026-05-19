@@ -1,4 +1,4 @@
-const CACHE_NAME = 'glossary-cache-v2';
+const CACHE_NAME = 'glossary-cache-v3';
 
 const PRECACHE_ASSETS = [
   './',
