@@ -38,54 +38,83 @@ let deferredPrompt = null;
 async function initAuth() {
   state.isLogin = true;
   const loadingScreen = document.getElementById('loading-screen');
+
+  // Temporizador de seguridad defensivo de 3.5 segundos para garantizar que el usuario nunca se quede atascado
+  const safetyTimeout = setTimeout(() => {
+    if (loadingScreen && !loadingScreen.classList.contains('hide')) {
+      console.warn('Temporizador de seguridad activado: Supabase tarda demasiado en responder o está bloqueado. Forzando desvanecimiento.');
+      loadingScreen.classList.add('hide');
+      const authScreen = document.getElementById('auth-screen');
+      const appContainer = document.getElementById('app');
+      // Si ambos están ocultos, mostrar por defecto el de autenticación para permitir la interacción
+      if (authScreen && appContainer && authScreen.classList.contains('hide') && appContainer.classList.contains('hide')) {
+        authScreen.classList.remove('hide');
+      }
+    }
+  }, 3500);
   
   // Escuchar cambios de estado de autenticación en Supabase
-  db.supabase.auth.onAuthStateChange(async (event, session) => {
+  try {
+    db.supabase.auth.onAuthStateChange(async (event, session) => {
+      const authScreen = document.getElementById('auth-screen');
+      const appContainer = document.getElementById('app');
+      const btnLogout = document.getElementById('btn-logout');
+      
+      try {
+        if (session) {
+          authScreen.classList.add('hide');
+          appContainer.classList.remove('hide');
+          if (btnLogout) btnLogout.classList.remove('hide');
+          
+          // Limpiar error de auth
+          const authErr = document.getElementById('auth-error');
+          if (authErr) authErr.classList.add('hide');
+          
+          // Cargar datos
+          await loadAndRender();
+        } else {
+          authScreen.classList.remove('hide');
+          appContainer.classList.add('hide');
+          if (btnLogout) btnLogout.classList.add('hide');
+          closeDetail();
+        }
+      } catch (innerError) {
+        console.error('Error al procesar el cambio de estado de autenticación:', innerError);
+      } finally {
+        clearTimeout(safetyTimeout);
+        if (loadingScreen) loadingScreen.classList.add('hide');
+      }
+    });
+  } catch (err) {
+    console.error('Error al registrar onAuthStateChange:', err);
+  }
+
+  // Verificar sesión actual
+  try {
+    const { data: { session } } = await db.supabase.auth.getSession();
     const authScreen = document.getElementById('auth-screen');
     const appContainer = document.getElementById('app');
     const btnLogout = document.getElementById('btn-logout');
-    
+
     if (session) {
       authScreen.classList.add('hide');
       appContainer.classList.remove('hide');
       if (btnLogout) btnLogout.classList.remove('hide');
-      
-      // Limpiar error de auth
-      const authErr = document.getElementById('auth-error');
-      if (authErr) authErr.classList.add('hide');
-      
-      // Cargar datos
       await loadAndRender();
     } else {
       authScreen.classList.remove('hide');
       appContainer.classList.add('hide');
       if (btnLogout) btnLogout.classList.add('hide');
-      closeDetail();
     }
-
-    // Ocultar pantalla de carga una vez procesado el cambio de estado
+  } catch (error) {
+    console.error('Error al recuperar la sesión activa de Supabase:', error);
+    // Mostrar pantalla de autenticación como fallback
+    const authScreen = document.getElementById('auth-screen');
+    if (authScreen) authScreen.classList.remove('hide');
+  } finally {
+    clearTimeout(safetyTimeout);
     if (loadingScreen) loadingScreen.classList.add('hide');
-  });
-
-  // Verificar sesión actual
-  const { data: { session } } = await db.supabase.auth.getSession();
-  const authScreen = document.getElementById('auth-screen');
-  const appContainer = document.getElementById('app');
-  const btnLogout = document.getElementById('btn-logout');
-
-  if (session) {
-    authScreen.classList.add('hide');
-    appContainer.classList.remove('hide');
-    if (btnLogout) btnLogout.classList.remove('hide');
-    await loadAndRender();
-  } else {
-    authScreen.classList.remove('hide');
-    appContainer.classList.add('hide');
-    if (btnLogout) btnLogout.classList.add('hide');
   }
-
-  // Ocultar pantalla de carga una vez verificado el estado inicial
-  if (loadingScreen) loadingScreen.classList.add('hide');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -98,6 +127,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     showToast('Error de conexión con la nube de Supabase.', 'danger');
     console.error(error);
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) loadingScreen.classList.add('hide');
+    const authScreen = document.getElementById('auth-screen');
+    if (authScreen) authScreen.classList.remove('hide');
   }
 
   // 3. Registrar Event Listeners
